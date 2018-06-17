@@ -6,7 +6,7 @@ handlers = {
 };
 
 function notifyStatus(message) {
-    document.getElementById('status').innerHTML = message['user'];
+    document.getElementById('status').innerHTML = message;
 }
 
 function fillTable(data) {
