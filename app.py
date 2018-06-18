@@ -5,11 +5,18 @@ import os
 from tornado.escape import json_decode
 import json
 
+import psycopg2
+import pandas as pd
+from sqlalchemy import create_engine
+
+engine = create_engine("postgresql://termux:123@localhost/termux")
+#df = pd.Dataframe.from_csv('db/b.txt', delimiter='\t', encoding='cp1252')
+#df.to_sql(name='base2', con=engine, if_exists='replace' ,index=False)
+
 class AjaxHandler(tornado.web.RequestHandler):
     def post(self):
         data = self.request.body
         print('printing data:', data)
-
 
     def get(self):
         data = self.request.body
@@ -28,7 +35,6 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         data = data['data']
 
         payload = {}
-
 
         if event == 'saveUser':
             payload = {'event': 'notifyStatus', 'data': data}
