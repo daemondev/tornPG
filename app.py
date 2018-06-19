@@ -9,6 +9,8 @@ import psycopg2
 import pandas as pd
 from sqlalchemy import create_engine
 
+from models import *
+
 engine = create_engine("postgresql://termux:123@localhost/termux")
 #df = pd.Dataframe.from_csv('db/b.txt', delimiter='\t', encoding='cp1252')
 #df.to_sql(name='base2', con=engine, if_exists='replace' ,index=False)

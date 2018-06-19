@@ -15,10 +15,11 @@ function fillTable(data) {
 
 function sendMessage() {
     user = document.getElementById('User Name:').value;
+    address = document.getElementById('Address:').value;
     phone = document.getElementById('Phone:').value;
     email = document.getElementById('Email:').value;
 
-    data = {'event':'saveUser', 'data': {"user": user, 'phone': phone, 'email': email}};
+    data = {'event':'saveUser', 'data': {"user": user, 'address': address, 'phone': phone, 'email': email}};
     ws.send(JSON.stringify(data));
 }
 
