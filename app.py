@@ -8,12 +8,16 @@ import json
 import psycopg2
 import pandas as pd
 from sqlalchemy import create_engine
-
+from sqlalchemy.ext.serializer import loads, dumps
+from sqlalchemy.orm import sessionmaker
 from models import *
 
 engine = create_engine("postgresql://termux:123@localhost/termux")
 #df = pd.Dataframe.from_csv('db/b.txt', delimiter='\t', encoding='cp1252')
 #df.to_sql(name='base2', con=engine, if_exists='replace' ,index=False)
+
+Session = sessionmaker(engine)
+session= Session()
 
 class AjaxHandler(tornado.web.RequestHandler):
     def post(self):
@@ -39,7 +43,22 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         payload = {}
 
         if event == 'saveUser':
-            payload = {'event': 'notifyStatus', 'data': data}
+            base = Base()
+            base.nombre = data['user']
+            base.direccion = data['address']
+            base.telefono = data['phone']
+            base.usuario = data['email']
+            session.add(base)
+            session.commit()
+
+            #qBase = session.query(Base).all()
+            qBase = session.query(Base)
+            #qBase = Base.query.all()
+            #session.commit()
+
+            #payload = {'event': 'notifyStatus', 'data': qBase}
+            #payload = {'event': 'fillTable', 'data': dumps(qBase)}
+            print(dumps(qBase))
         else:
             payload = {'event': 'fillTable', 'data': data}
 

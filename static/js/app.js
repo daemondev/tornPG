@@ -11,6 +11,9 @@ function notifyStatus(message) {
 
 function fillTable(data) {
     alert('filling table');
+    data.map(function(user){
+        alert(user)
+    });
 }
 
 function sendMessage() {
