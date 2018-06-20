@@ -72,6 +72,9 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             qBase = session.query(Base).all()
 
             payload = {'event': 'fillTable', 'data': qBase}
+        elif event == 'loadPandas':
+            df = pd.Dataframe.from_csv('db/b.txt', delimiter='\t', encoding='cp1252')
+            df.to_sql(name='base2', con=engine, if_exists='replace' ,index=False)
         else:
             payload = {'event': 'fillTable', 'data': data}
 
