@@ -10,10 +10,12 @@ function notifyStatus(message) {
 }
 
 function fillTable(data) {
-    alert('filling table');
+    tBody = document.getElementById('tblBaseBody');
+    tr = '';
     data.map(function(user){
-        alert(user)
+        tr = tr +'<tr><td>' + user.nombre + '</td><td>' + user.direccion + '</td><td>' + user.telefono + '</td><td>' + user.usuario + '</td></tr>';
     });
+    tBody.innerHTML = tr;
 }
 
 function sendMessage() {
@@ -45,6 +47,7 @@ function btnSubmitOnClick(e) {
 function prepare() {
     document.getElementById('btnSubmit').onclick = btnSubmitOnClick;
     document.getElementById('User Name:').value = 'Richar Muñico Samaniego';
+    document.getElementById('Address:').value = 'San Juan de Miraflores';
     document.getElementById('Phone:').value = '982929041';
     document.getElementById('Email:').value = 'granlinux@gmail.com';
 }

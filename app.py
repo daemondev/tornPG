@@ -11,6 +11,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.serializer import loads, dumps
 from sqlalchemy.orm import sessionmaker
 from models import *
+import json
+
+from sqlalchemy.ext.declarative import DeclarativeMeta
 
 engine = create_engine("postgresql://termux:123@localhost/termux")
 #df = pd.Dataframe.from_csv('db/b.txt', delimiter='\t', encoding='cp1252')
@@ -18,6 +21,21 @@ engine = create_engine("postgresql://termux:123@localhost/termux")
 
 Session = sessionmaker(engine)
 session= Session()
+
+class AlchemyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj.__class__, DeclarativeMeta):
+            fields = {}
+            for field in [x for x in dir(obj) if not x.startswith('_') and x != 'metadata']:
+                data = obj.__getattribute__(field)
+                try:
+                    json.dumps(data)
+                    fields[field] = data
+                except TypeError:
+                    fields[field] = None
+            return fields
+        return json.JSONEncoder.default(self, obj)
+
 
 class AjaxHandler(tornado.web.RequestHandler):
     def post(self):
@@ -51,19 +69,15 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             session.add(base)
             session.commit()
 
-            #qBase = session.query(Base).all()
-            qBase = session.query(Base)
-            #qBase = Base.query.all()
-            #session.commit()
+            qBase = session.query(Base).all()
 
-            #payload = {'event': 'notifyStatus', 'data': qBase}
-            #payload = {'event': 'fillTable', 'data': dumps(qBase)}
-            print(dumps(qBase))
+            payload = {'event': 'fillTable', 'data': qBase}
         else:
             payload = {'event': 'fillTable', 'data': data}
 
         print('writing message received: event: ', event, 'data: ',  data)
-        self.write_message(json.dumps(payload))
+        #self.write_message(json.dumps(payload))
+        self.write_message(json.dumps(payload, cls=AlchemyEncoder))
 
     def check_origin(self, origin):
         return True
