@@ -1,6 +1,18 @@
 body{
     background-color: cyan;
 }
+*{
+    font-size: 10px;
+}
+
+h1{
+    color:red;
+    font-size: 11px;
+}
+
+.edit, .delete{
+    font-size: 12px !important;
+}
 
 #div_main{
     text-align:center;
@@ -9,7 +21,23 @@ body{
 #status{
     color: red;
     background-color: yellow;
-    position: absolute;
+    position: fixed;
+    font-size: 12px;
     left: 0;
     bottom: 0;
+}
+
+#tblBaseBody *{
+    font-size:7px;
+}
+
+#tblBase tr th:first-child {
+    display:none;
+}
+
+#tblBase tr td:first-child {
+    display:none;
+}
+input[type='submit']{
+    width: 80px;
 }

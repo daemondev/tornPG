@@ -51,7 +51,11 @@ class AjaxHandler(tornado.web.RequestHandler):
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
     def open(self):
         print('open connection')
-        self.write_message('send connected message')
+        qBase = session.query(Base).all()
+        payload = {'event': 'fillTable', 'data': qBase}
+
+        self.write_message(json.dumps(payload, cls=AlchemyEncoder))
+        #self.write_message('send connected message')
 
     def on_message(self, message):
         data = json_decode(message)
@@ -59,22 +63,41 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         data = data['data']
 
         payload = {}
+        if event in ['updateIten', 'saveUser']:
+            base = None
+            if event == 'saveUser':
+                base = Base()
+            if event == 'updateIten':
+                base = session.query(Base).get(data['id'])
 
-        if event == 'saveUser':
-            base = Base()
             base.nombre = data['user']
             base.direccion = data['address']
             base.telefono = data['phone']
             base.usuario = data['email']
-            session.add(base)
+
+            if event == 'saveUser':
+                session.add(base)
             session.commit()
 
             qBase = session.query(Base).all()
-
             payload = {'event': 'fillTable', 'data': qBase}
         elif event == 'loadPandas':
-            df = pd.Dataframe.from_csv('db/b.txt', delimiter='\t', encoding='cp1252')
+            print('>>> prev load')
+            #df = pd.DataFrame.from_csv('db/b.txt', delimiter='\t', encoding='cp1252')
+            df = pd.DataFrame.from_csv('db/b.txt', sep='\t', encoding='cp1252')
+            df['extra'] = 999
             df.to_sql(name='base2', con=engine, if_exists='replace' ,index=False)
+            print('>>> post load')
+        elif event == 'deleteItem':
+            item = session.query(Base).get(data['id'])
+            print('>>> deleting', item)
+            session.delete(item)
+            session.commit()
+            qBase = session.query(Base).all()
+            payload = {'event': 'fillTable', 'data': qBase}
+
+            self.write_message(json.dumps(payload, cls=AlchemyEncoder))
+
         else:
             payload = {'event': 'fillTable', 'data': data}
 
