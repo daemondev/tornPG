@@ -16,11 +16,13 @@ function fillTable(data) {
         tr = tr +'<tr><td>' + user.id + '</td><td>' + user.nombre + '</td><td>' + user.direccion + '</td><td>' + user.telefono + '</td><td>' + user.usuario + '</td><td>' + '<a link="" href="#" class="edit" onclick="editItem(event)">Edit</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="#" class="delete" onclick="deleteItem(event)">Delete</a>'  + '</td></tr>';
     });
     tBody.innerHTML = tr;
-    dels = document.getElemenstByClassName('delete');
-    for (i = 0; i < dels.length; i++) {
-        alert('data');
-        dels[i].onclick = deleteItem;
-    }
+//--------------------------------------------------
+//     dels = document.getElementsByClassName('delete');
+//     for (i = 0; i < dels.length; i++) {
+//         alert('data');
+//         dels[i].onclick = deleteItem;
+//     }
+//--------------------------------------------------
 
 }
 

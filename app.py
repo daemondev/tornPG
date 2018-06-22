@@ -3,6 +3,7 @@ import tornado.ioloop
 import tornado.websocket
 import os
 from tornado.escape import json_decode
+from tornado import gen
 import json
 
 import psycopg2
@@ -13,8 +14,16 @@ from sqlalchemy.orm import sessionmaker
 from models import *
 import json
 
-from sqlalchemy.ext.declarative import DeclarativeMeta
 
+#-------------------------------------------------- BEGIN [async] - (22-06-2018 - 03:17:57) {{
+import psycopg2.extensions
+
+conn = psycopg2.connect('dbname=termux user=termux password=123')
+conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+#-------------------------------------------------- END   [async] - (22-06-2018 - 03:17:57) }}
+
+from sqlalchemy.ext.declarative import DeclarativeMeta
+io_loop  = tornado.ioloop.IOLoop.instance()
 engine = create_engine("postgresql://termux:123@localhost/termux")
 #df = pd.Dataframe.from_csv('db/b.txt', delimiter='\t', encoding='cp1252')
 #df.to_sql(name='base2', con=engine, if_exists='replace' ,index=False)
@@ -47,15 +56,34 @@ class AjaxHandler(tornado.web.RequestHandler):
         self.write('ajax ready!!!')
         print('printing data:', data)
 
+def listen(ch):
+    '''Listen to a channel.'''
+    curs = conn.cursor()
+    curs.execute("LISTEN %s;" % ch)
+
+@gen.coroutine
+def watch_db(fd, events):
+    state = conn.poll()
+    if state == psycopg2.extensions.POLL_OK:
+        if conn.notifies:
+            notify = conn.notifies.pop()
+            print(notify.payload)
+    print(">>> notified")
+
+connections = set()
+#connections = {}
+
+@gen.coroutine
+def websocketManager(self, request):
+    print(">>> websocketManager executed")
+    pass
 
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
     def open(self):
-        print('open connection')
         qBase = session.query(Base).all()
         payload = {'event': 'fillTable', 'data': qBase}
-
+        connections.add(self)
         self.write_message(json.dumps(payload, cls=AlchemyEncoder))
-        #self.write_message('send connected message')
 
     def on_message(self, message):
         data = json_decode(message)
@@ -82,7 +110,6 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             qBase = session.query(Base).all()
             payload = {'event': 'fillTable', 'data': qBase}
         elif event == 'loadPandas':
-            print('>>> prev load')
             #df = pd.DataFrame.from_csv('db/b.txt', delimiter='\t', encoding='cp1252')
             df = pd.DataFrame.from_csv('db/b.txt', sep='\t', encoding='cp1252')
             df['extra'] = 999
@@ -90,19 +117,16 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             print('>>> post load')
         elif event == 'deleteItem':
             item = session.query(Base).get(data['id'])
-            print('>>> deleting', item)
             session.delete(item)
             session.commit()
             qBase = session.query(Base).all()
             payload = {'event': 'fillTable', 'data': qBase}
 
             self.write_message(json.dumps(payload, cls=AlchemyEncoder))
-
         else:
             payload = {'event': 'fillTable', 'data': data}
 
         print('writing message received: event: ', event, 'data: ',  data)
-        #self.write_message(json.dumps(payload))
         self.write_message(json.dumps(payload, cls=AlchemyEncoder))
 
     def check_origin(self, origin):
@@ -126,12 +150,18 @@ settings = dict(
         )
 
 app = tornado.web.Application(handlers, **settings)
+io_loop.add_handler(conn.fileno(), watch_db, io_loop.READ)
 
 def main():
     try:
         print('listen server IN port 8000')
         app.listen(8000)
-        tornado.ioloop.IOLoop.instance().start()
+        #listen('data')
+        listen('base_changes')
+        #tornado.ioloop.IOLoop.current().add_callback(watch_db)
+        #tornado.ioloop.IOLoop.instance().start()
+
+        io_loop.start()
     except KeyboardInterrupt as e:
         print('stopping server')
         tornado.ioloop.IOLoop.instance().stop()
