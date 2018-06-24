@@ -15,7 +15,7 @@ CREATE OR REPLACE FUNCTION notify_trigger() RETURNS trigger AS $$
 			dato := NEW;
 		END IF;
 		--PERFORM pg_notify(channel_name, '{"id": "' || NEW.id || '"}');
-		PERFORM pg_notify(channel_name, json_build_object('table', TG_TABLE_NAME, 'id', dato.id, 'type', TG_OP)::text);
+		PERFORM pg_notify(channel_name, json_build_object('table', TG_TABLE_NAME, 'id', dato.id, 'type', TG_OP, 'row', row_to_json(dato))::text);
 		return dato;
 	END;
 	$$ LANGUAGE plpgsql;

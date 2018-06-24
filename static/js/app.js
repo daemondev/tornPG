@@ -2,8 +2,23 @@ var ws = null;
 var URL = 'ws://localhost:8000/ws';
 handlers = {
     'fillTable': fillTable,
-    'notifyStatus': notifyStatus
+    'notifyStatus': notifyStatus,
+    'listFiles': listFiles,
+    'notifyFromDB': notifyFromDB
 };
+
+function listFiles (message) {
+    tblFilesBody = document.getElementById('tblFilesBody');
+    tr = '';
+    for (var i = 0; i < message.total; i++) {
+        tr = tr + '<tr><td>' + (i+1) + '</td><td>'  + message.name[i]  + '</td><td>' + message.size[i] + '</td><td>' + message.date[i]  + '</td></tr>';
+    }
+    tblFilesBody.innerHTML = tr;
+}
+
+function notifyFromDB (message) {
+    alert('receive database notification: ' + message);
+}
 
 function notifyStatus(message) {
     document.getElementById('status').innerHTML = message;
@@ -16,13 +31,11 @@ function fillTable(data) {
         tr = tr +'<tr><td>' + user.id + '</td><td>' + user.nombre + '</td><td>' + user.direccion + '</td><td>' + user.telefono + '</td><td>' + user.usuario + '</td><td>' + '<a link="" href="#" class="edit" onclick="editItem(event)">Edit</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="#" class="delete" onclick="deleteItem(event)">Delete</a>'  + '</td></tr>';
     });
     tBody.innerHTML = tr;
-//--------------------------------------------------
-//     dels = document.getElementsByClassName('delete');
-//     for (i = 0; i < dels.length; i++) {
-//         alert('data');
-//         dels[i].onclick = deleteItem;
-//     }
-//--------------------------------------------------
+    dels = document.getElemenstByClassName('delete');
+    for (i = 0; i < dels.length; i++) {
+        alert('data');
+        dels[i].onclick = deleteItem;
+    }
 
 }
 
@@ -50,7 +63,13 @@ function onMessage(r) {
     raw = eval('(' + r.data + ')');
     event = raw['event'];
     data = raw.data;
-    handlers[event](data);
+    if (event == 'multi') {
+        for (var i = 0; i < data.length; i++) {
+            handlers[data[i]['event']](data[i]['data']);
+        }
+    }else{
+        handlers[event](data);
+    }
 }
 
 function btnSubmitOnClick(e) {
@@ -97,11 +116,31 @@ function btnUpdateOnClick(e){
 }
 
 function btnListFilesOnClick(e){
+    e.preventDefault();
     send('listFiles',{});
+    toggleDivs('divFiles');
+}
+
+function btnListUsersOnClick(e){
+    e.preventDefault();
+    send('listUsers', {});
+    toggleDivs('divUsers');
+}
+
+function toggleDivs(currentDiv){
+    ddc = document.getElementById('divDataContainners');
+    divs = ddc.getElementsByTagName('div');
+    for (var i = 0; i < divs.length; i++) {
+        if (divs[i].id != currentDiv) {
+            divs[i].style.display = 'none';
+        }
+    }
+    document.getElementById(currentDiv).style.display = 'block';
 }
 
 function prepare() {
     document.getElementById('btnListFiles').onclick = btnListFilesOnClick;
+    document.getElementById('btnListUsers').onclick = btnListUsersOnClick;
     document.getElementById('btnUpdate').onclick = btnUpdateOnClick;
     document.getElementById('btnSubmit').onclick = btnSubmitOnClick;
     document.getElementById('btnLoadData').onclick = btnLoadDataOnClick;

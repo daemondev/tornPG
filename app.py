@@ -13,7 +13,10 @@ from sqlalchemy.ext.serializer import loads, dumps
 from sqlalchemy.orm import sessionmaker
 from models import *
 import json
-
+import datetime
+import tornado
+import time
+tornado.httputil.format_timestamp(time.localtime())
 
 #-------------------------------------------------- BEGIN [async] - (22-06-2018 - 03:17:57) {{
 import psycopg2.extensions
@@ -23,6 +26,7 @@ conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
 #-------------------------------------------------- END   [async] - (22-06-2018 - 03:17:57) }}
 
 from sqlalchemy.ext.declarative import DeclarativeMeta
+
 io_loop  = tornado.ioloop.IOLoop.instance()
 engine = create_engine("postgresql://termux:123@localhost/termux")
 #df = pd.Dataframe.from_csv('db/b.txt', delimiter='\t', encoding='cp1252')
@@ -68,6 +72,14 @@ def watch_db(fd, events):
         if conn.notifies:
             notify = conn.notifies.pop()
             print(notify.payload)
+            qBase = session.query(Base).all()
+            for cnx in connections:
+                payload1 = {'event': 'notifyFromDB', 'data': notify.payload}
+                payload2 = {'event': 'fillTable', 'data': qBase}
+                multi_payload = {'event': 'multi', 'data': [payload1, payload2]}
+                #cnx.write_message(json.dumps(payload))
+                print('\n>>> multi_payload: ', multi_payload, '\n<<<')
+                cnx.write_message(json.dumps(multi_payload, cls=AlchemyEncoder))
     print(">>> notified")
 
 connections = set()
@@ -77,6 +89,14 @@ connections = set()
 def websocketManager(self, request):
     print(">>> websocketManager executed")
     pass
+
+def getHRFileSize(size, precition=2):
+    suffixes = ['B', 'KB', 'MB', 'GB']
+    suffixesIndex = 0
+    while size > 1024:
+        suffixesIndex += 1
+        size = size / 1024.0
+    return '%.*f %s' % (precition, size, suffixes[suffixesIndex])
 
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
     def open(self):
@@ -91,6 +111,28 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         data = data['data']
 
         payload = {}
+        if event == 'listFiles':
+            cwd = os.path.join(os.getcwd(), 'db')
+            #files = [f for f in os.listdir(cwd) if os.path.isfile(os.path.join(cwd, f))]
+            files = {'name': [], 'size': [], 'date': [], 'total':0}
+            #files = [{'name':, 'size':, 'date':} for f in os.scandir(cwd) if f.is_file()]
+            counter = 1
+            with os.scandir(cwd) as it:
+                for entry in it:
+                    f_spec = entry.stat()
+                    name = entry.name
+                    size = f_spec.st_size
+                    date = f_spec.st_mtime
+                    print(name, size, date)
+                    files['name'].append(name)
+                    files['size'].append(getHRFileSize(f_spec.st_size))
+                    files['date'].append(datetime.datetime.fromtimestamp(f_spec.st_mtime).strftime('%Y-%m-%d %H:%M'))
+                    files['total'] += 1
+
+            print('>>> cwd: ', cwd, '\nfiles', files)
+            payload = {'event': 'listFiles', 'data': files}
+            for cnx in connections:
+                cnx.write_message(json.dumps(payload))
         if event in ['updateIten', 'saveUser']:
             base = None
             if event == 'saveUser':
@@ -126,15 +168,20 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         else:
             payload = {'event': 'fillTable', 'data': data}
 
-        print('writing message received: event: ', event, 'data: ',  data)
+        print('\n\nwriting message received: event: ', event, 'data: ',  data,'\n\n')
         self.write_message(json.dumps(payload, cls=AlchemyEncoder))
 
     def check_origin(self, origin):
         return True
 
+    def on_close(self):
+        connections.remove(self)
+        print('>>> client disconected: ', self)
+
 class IndexHandler(tornado.web.RequestHandler):
     def get(self):
-        self.render('index.html', state='Ready!!!')
+        date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + str(time.tzname)
+        self.render('index.html', state='Ready!!!', date=date)
 
 handlers = [
             (r'/', IndexHandler),

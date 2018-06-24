@@ -6,7 +6,7 @@
     </head>
     <body>
         <div id="div_main">
-            <h1>Hello I'm Tornado/PostgreSQL realtime App and I'm {{state}}</h1>
+            <h1>Hello I'm Tornado/PostgreSQL realtime App and I'm {{state}} {{date}}</h1>
             <hr/>
             <form action="#" method="post" accept-charset="utf-8">
                 <table align='center'>
@@ -34,17 +34,33 @@
             </form>
             <div id="div_actions">
                 <input type="button" name="btnLoadData" id="btnLoadData" value="LOAD DATA">
+                <input type="button" name="btnListUsers" id="btnListUsers" value="LIST USERS">
                 <input type="button" name="btnListFiles" id="btnListFiles" value="LIST FILES">
             </div>
-            <table border="1" id='tblBase'>
-                <thead id='tblBaseHead'>
-                    <tr>
-                        <th>id</th><th>Nombre</th><th>Direcci&oacute;n</th><th>Tel&eacute;fono</th><th>Usuario</th><th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id='tblBaseBody'>
-                </tbody>
-            </table>
+            <div id='divDataContainners'>
+                <div id='divUsers'>
+                     <table border="1" id='tblBase'>
+                        <thead id='tblBaseHead'>
+                            <tr>
+                                <th>id</th><th>Nombre</th><th>Direcci&oacute;n</th><th>Tel&eacute;fono</th><th>Usuario</th><th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id='tblBaseBody'>
+                        </tbody>
+                    </table>
+                </div>
+                <div id='divFiles'>
+                    <table border="1" id='tblFiles'>
+                        <thead id='tblFilesHead'>
+                            <tr>
+                                <th>Nro</th><th>Nombre</th><th>Tama&ntilde;o</th><th>Modificaci&oacute;n</th>
+                            </tr>
+                        </thead>
+                        <tbody id='tblFilesBody'>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
         <label for="object" id='status'>...</label>
     </body>
