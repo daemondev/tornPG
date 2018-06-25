@@ -134,9 +134,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
 
             print('>>> cwd: ', cwd, '\nfiles', files)
             payload = {'event': 'listFiles', 'data': files}
-            for cnx in connections:
-                cnx.write_message(json.dumps(payload))
-        if event in ['updateIten', 'saveUser']:
+        elif event in ['updateIten', 'saveUser']:
             base = None
             if event == 'saveUser':
                 base = Base()
@@ -151,9 +149,6 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             if event == 'saveUser':
                 session.add(base)
             session.commit()
-
-            qBase = session.query(Base).all()
-            payload = {'event': 'fillTable', 'data': qBase}
         elif event == 'loadPandas':
             #df = pd.DataFrame.from_csv('db/b.txt', delimiter='\t', encoding='cp1252')
             df = pd.DataFrame.from_csv('db/b.txt', sep='\t', encoding='cp1252')
@@ -164,15 +159,15 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             item = session.query(Base).get(data['id'])
             session.delete(item)
             session.commit()
+        else:
             qBase = session.query(Base).all()
             payload = {'event': 'fillTable', 'data': qBase}
 
-            self.write_message(json.dumps(payload, cls=AlchemyEncoder))
-        else:
-            payload = {'event': 'fillTable', 'data': data}
-
         print('\n\nwriting message received: event: ', event, 'data: ',  data,'\n\n')
-        self.write_message(json.dumps(payload, cls=AlchemyEncoder))
+
+        if event not in ['updateIten', 'saveUser', 'deleteItem']:
+            for cnx in connections:
+                cnx.write_message(json.dumps(payload, cls=AlchemyEncoder))
 
     def check_origin(self, origin):
         return True
