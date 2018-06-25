@@ -18,6 +18,10 @@ import tornado
 import time
 tornado.httputil.format_timestamp(time.localtime())
 
+if not hasattr(os, 'scandir'):
+    import scandir
+    os.scandir = scandir.scandir
+
 #-------------------------------------------------- BEGIN [async] - (22-06-2018 - 03:17:57) {{
 import psycopg2.extensions
 
@@ -98,6 +102,9 @@ def getHRFileSize(size, precition=2):
         size = size / 1024.0
     return '%.*f %s' % (precition, size, suffixes[suffixesIndex])
 
+def getScandirIterator(path):
+    return os.scandir(path)
+
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
     def open(self):
         qBase = session.query(Base).all()
@@ -115,19 +122,15 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             cwd = os.path.join(os.getcwd(), 'db')
             #files = [f for f in os.listdir(cwd) if os.path.isfile(os.path.join(cwd, f))]
             files = {'name': [], 'size': [], 'date': [], 'total':0}
-            #files = [{'name':, 'size':, 'date':} for f in os.scandir(cwd) if f.is_file()]
             counter = 1
-            with os.scandir(cwd) as it:
-                for entry in it:
-                    f_spec = entry.stat()
-                    name = entry.name
-                    size = f_spec.st_size
-                    date = f_spec.st_mtime
-                    print(name, size, date)
-                    files['name'].append(name)
-                    files['size'].append(getHRFileSize(f_spec.st_size))
-                    files['date'].append(datetime.datetime.fromtimestamp(f_spec.st_mtime).strftime('%Y-%m-%d %H:%M'))
-                    files['total'] += 1
+            #with os.scandir(cwd) as it:
+            it = getScandirIterator(cwd)
+            for entry in it:
+                f_spec = entry.stat()
+                files['name'].append(entry.name)
+                files['size'].append(getHRFileSize(f_spec.st_size))
+                files['date'].append(datetime.datetime.fromtimestamp(f_spec.st_mtime).strftime('%Y-%m-%d %H:%M'))
+                files['total'] += 1
 
             print('>>> cwd: ', cwd, '\nfiles', files)
             payload = {'event': 'listFiles', 'data': files}
@@ -203,6 +206,7 @@ def main():
     try:
         print('listen server IN port 8000')
         app.listen(8000)
+        #app.listen(8888)
         #listen('data')
         listen('base_changes')
         #tornado.ioloop.IOLoop.current().add_callback(watch_db)

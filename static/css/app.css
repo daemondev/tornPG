@@ -45,3 +45,10 @@ input[type='submit']{
 #divFiles{
     display: none;
 }
+#divDataContainners{
+    text-align: center;
+}
+
+#divDataContainners table{
+    margin: 0 auto;
+}

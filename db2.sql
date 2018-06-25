@@ -5,14 +5,10 @@ CREATE OR REPLACE FUNCTION notify_trigger() RETURNS trigger AS $$
 		channel_name varchar DEFAULT (TG_TABLE_NAME || '_changes');
 		dato record;
 	BEGIN
-		IF TG_OP = 'INSERT' THEN
+		IF TG_OP = 'INSERT' OR TG_OP = 'UPDATE' THEN -- OR TG_OP = 'DELETE'
 			dato := NEW;
-		END IF;
-		IF TG_OP = 'DELETE' THEN
+                ELSE
 			dato := OLD;
-		END IF;
-		IF TG_OP = 'UPDATE' THEN
-			dato := NEW;
 		END IF;
 		--PERFORM pg_notify(channel_name, '{"id": "' || NEW.id || '"}');
 		PERFORM pg_notify(channel_name, json_build_object('table', TG_TABLE_NAME, 'id', dato.id, 'type', TG_OP, 'row', row_to_json(dato))::text);

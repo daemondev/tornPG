@@ -1,5 +1,6 @@
 var ws = null;
-var URL = 'ws://localhost:8000/ws';
+var URL = 'ws://192.168.3.103:8000/ws';
+//var URL = 'ws://localhost:8000/ws';
 handlers = {
     'fillTable': fillTable,
     'notifyStatus': notifyStatus,
@@ -112,7 +113,9 @@ function editItem (e) {
 function btnUpdateOnClick(e){
     e.preventDefault();
     userData = collectData();
-    send('updateIten', userData);
+    if (userData.id != "") {
+        send('updateIten', userData);
+    }
 }
 
 function btnListFilesOnClick(e){
